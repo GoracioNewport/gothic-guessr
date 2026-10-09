@@ -69,6 +69,13 @@ tmp=$(mktemp /etc/gothic-guessr/.env.XXXXXX)
   echo "ADMIN_PASSWORD=$admin"
   echo "ADMIN_PATH=$admin_path"
   echo "SERVER_SECRET=$secret"
+  # Keep every other setting added by hand (PUBLIC_CONTACT and the like), last value wins.
+  if [[ -f $ENV ]]; then
+    grep -E '^[A-Z_][A-Z0-9_]*=' "$ENV" \
+      | grep -vE '^(NODE_ENV|HOST|PORT|DATA_DIR|SERVER_DATA_DIR|DB_PATH|TRUST_PROXY|PUBLIC_ORIGIN|ADMIN_PASSWORD|ADMIN_PATH|SERVER_SECRET)=' \
+      | awk -F= '{ line[$1] = $0; if (!($1 in seen)) { seen[$1] = 1; order[++n] = $1 } } END { for (i = 1; i <= n; i++) print line[order[i]] }' \
+      || true
+  fi
 } > "$tmp"
 chown root:root "$tmp"
 chmod 0600 "$tmp"
