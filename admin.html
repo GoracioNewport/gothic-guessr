@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- The content of g2-admin-path is filled with the server's ADMIN_PATH (server/app.ts shellHtml; vite.config.ts
+         in dev): the admin SPA routes and calls its API under it (src/admin/base.ts). Only this shell gets it. -->
+    <meta name="g2-admin-path" content="%ADMIN_PATH%" />
+    <meta name="referrer" content="same-origin" />
+    <link rel="icon" href="/ui/gothic/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/ui/gothic/icon-192.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/ui/gothic/apple-touch-icon.png" />
+    <title>Gothic Guessr — Admin</title>
+    <link rel="preload" href="/ui/gothic/fonts/GothicOld.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div id="admin"></div>
+    <script type="module" src="/src/admin/main.ts"></script>
+  </body>
+</html>

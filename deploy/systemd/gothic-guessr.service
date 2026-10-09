@@ -1,0 +1,64 @@
+# Gothic II Guessr: Node API + WebSocket hub behind nginx. Installed by deploy/scripts/bootstrap.sh into
+# /etc/systemd/system/. The app listens on 127.0.0.1:8787 only (HOST/PORT in the env file) and may not talk to any
+# address but localhost (IPAddressDeny), so the process cannot reach other networks or services of this host.
+[Unit]
+Description=Gothic II Guessr (Node API + WebSocket)
+After=network.target
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=g2
+Group=g2
+WorkingDirectory=/opt/gothic-guessr/app
+# NODE_ENV=production, HOST, PORT, DATA_DIR, SERVER_DATA_DIR, DB_PATH, TRUST_PROXY=1, PUBLIC_ORIGIN,
+# ADMIN_PASSWORD, ADMIN_PATH, SERVER_SECRET (written by deploy/scripts/secrets.sh, root 0600; systemd reads it as
+# root).
+EnvironmentFile=/etc/gothic-guessr/env
+ExecStart=/usr/bin/node --enable-source-maps --max-old-space-size=384 /opt/gothic-guessr/app/dist-server/main.js
+Restart=always
+RestartSec=2
+TimeoutStopSec=10
+KillMode=mixed
+
+# The SQLite database lives in /var/lib/gothic-guessr (created by systemd, owned by g2, 0700).
+StateDirectory=gothic-guessr
+StateDirectoryMode=0700
+ReadWritePaths=/var/lib/gothic-guessr
+UMask=0077
+
+# Sandbox.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+# Resources: sized for a 1 vCPU / 2 GB box shared with nginx and possibly other services.
+MemoryHigh=500M
+MemoryMax=600M
+TasksMax=64
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target

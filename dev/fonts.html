@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fonts harness — Gothic II Guessr</title>
+    <style>
+      @font-face {
+        font-family: "Gothic Old";
+        src: url("/ui/gothic/fonts/GothicOld.woff2") format("woff2"),
+          url("/ui/gothic/fonts/GothicOld.woff") format("woff"),
+          url("/ui/gothic/fonts/GothicOld.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Gothic Default";
+        src: url("/ui/gothic/fonts/GothicDefault.woff2") format("woff2"),
+          url("/ui/gothic/fonts/GothicDefault.woff") format("woff"),
+          url("/ui/gothic/fonts/GothicDefault.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: block;
+      }
+      :root {
+        color-scheme: dark;
+        --gold: #ffdfaf;
+        --bg: #14141c;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--gold);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+      body {
+        padding: 16px;
+      }
+      h1 {
+        font: 400 32px/1 "Gothic Old", Georgia, serif;
+        margin: 0 0 16px;
+      }
+      h2 {
+        font: 400 14px/1 monospace;
+        color: #8a8a99;
+        margin: 24px 0 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .old {
+        font-family: "Gothic Old", Georgia, serif;
+      }
+      .default {
+        font-family: "Gothic Default", Georgia, serif;
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin: 4px 0;
+        white-space: nowrap;
+        overflow-x: auto;
+      }
+      .row .label {
+        flex: 0 0 56px;
+        font: 11px/1 monospace;
+        color: #8a8a99;
+      }
+      .sample {
+        line-height: 1.1;
+        /* visualise the line box and the baseline */
+        background: linear-gradient(to bottom, transparent 0, transparent 100%);
+        outline: 1px dashed #2e2e3c;
+      }
+      .ascii {
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-width: 900px;
+        line-height: 1.25;
+        outline: 1px dashed #2e2e3c;
+      }
+      .bitmap {
+        margin-top: 24px;
+        image-rendering: pixelated;
+        background: #000;
+        padding: 8px;
+        display: inline-block;
+      }
+      .status {
+        font: 12px/1.4 monospace;
+        color: #8a8a99;
+        margin-top: 24px;
+      }
+      .status b {
+        color: #9bd48c;
+      }
+      .status .err {
+        color: #e07070;
+      }
+      .cmp {
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .cmp canvas {
+        image-rendering: pixelated;
+        background: #000;
+      }
+      .cmp .cap {
+        font: 11px/1.4 monospace;
+        color: #8a8a99;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Gothic II Guessr — fonts harness</h1>
+
+    <h2>"Gothic Old" (FONT_OLD_20_WHITE, 32 px native)</h2>
+    <div id="old"></div>
+
+    <h2>"Gothic Default" (FONT_DEFAULT, 18 px native)</h2>
+    <div id="default"></div>
+
+    <h2>Native size: vector (top) vs the game's bitmap atlas (bottom)</h2>
+    <div class="cmp" id="cmp"></div>
+
+    <div class="status" id="status">loading fonts…</div>
+
+    <script type="module">
+      const SAMPLE = "Gothic II Guessr — Khorinis 1234567890";
+      const ASCII = Array.from({ length: 0x7f - 0x20 }, (_, i) => String.fromCharCode(0x20 + i)).join("");
+      const LATIN1 = Array.from({ length: 0x100 - 0xa0 }, (_, i) => String.fromCharCode(0xa0 + i)).join("");
+      const SIZES = { old: [18, 24, 32, 48, 64, 96], default: [14, 18, 24, 36, 54] };
+
+      for (const [id, sizes] of Object.entries(SIZES)) {
+        const root = document.getElementById(id);
+        for (const px of sizes) {
+          const row = document.createElement("div");
+          row.className = "row";
+          row.innerHTML = `<span class="label">${px}px</span><span class="sample ${id}" style="font-size:${px}px">${SAMPLE}</span>`;
+          root.appendChild(row);
+        }
+        for (const [name, text] of [
+          ["ASCII", ASCII],
+          ["Latin-1", LATIN1],
+          ["Accents", "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞß àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ Œœ Šš Žž Ÿ ‚„ ‘’“” – — … † ‡ • ™ € §©®"],
+          ["Fallback", "Кириллица / Cyrillic falls back to serif: Хоринис Долина Рудников Яркендар"],
+        ]) {
+          const h = document.createElement("div");
+          h.className = "row";
+          h.innerHTML = `<span class="label">${name}</span>`;
+          const s = document.createElement("div");
+          s.className = `ascii ${id}`;
+          s.style.fontSize = id === "old" ? "32px" : "18px";
+          s.textContent = text;
+          h.appendChild(s);
+          root.appendChild(h);
+        }
+      }
+
+      // Side by side with the real bitmap atlas at 1:1 so spacing/size can be compared.
+      async function bitmapLine(name, text, scale) {
+        const meta = await (await fetch(`/ui/gothic/${name}.json`)).json();
+        const img = new Image();
+        img.src = `/ui/gothic/${name}.png`;
+        await img.decode();
+        const W = meta.atlasWidth, H = meta.atlasHeight;
+        const cells = [...text].map((ch) => meta.glyphs[String(ch.charCodeAt(0))]).filter(Boolean);
+        const total = cells.reduce((a, g) => a + g.width, 0);
+        const cellH = Math.round((cells[0].v1 - cells[0].v0) * H);
+        const c = document.createElement("canvas");
+        c.width = total * scale;
+        c.height = cellH * scale;
+        const ctx = c.getContext("2d");
+        ctx.imageSmoothingEnabled = false;
+        let x = 0;
+        for (const g of cells) {
+          const sx = Math.round(g.u0 * W), sy = Math.round(g.v0 * H);
+          ctx.drawImage(img, sx, sy, g.width, cellH, x * scale, 0, g.width * scale, cellH * scale);
+          x += g.width;
+        }
+        return c;
+      }
+
+      const status = document.getElementById("status");
+      try {
+        await Promise.all([document.fonts.load('32px "Gothic Old"'), document.fonts.load('18px "Gothic Default"')]);
+        const loaded = [...document.fonts].filter((f) => f.status === "loaded").map((f) => `${f.family} (${f.status})`);
+        const ok = document.fonts.check('32px "Gothic Old"') && document.fonts.check('18px "Gothic Default"');
+        status.innerHTML = `fonts: <b>${ok ? "both loaded" : "NOT loaded"}</b> — ${loaded.join(", ")}`;
+        window.__fontsOk = ok;
+
+        for (const [name, family, px] of [
+          ["FONT_OLD_20_WHITE", "Gothic Old", 32],
+          ["FONT_DEFAULT", "Gothic Default", 18],
+        ]) {
+          const box = document.createElement("div");
+          const vec = document.createElement("div");
+          vec.style.font = `${px}px/1 "${family}"`;
+          vec.style.lineHeight = "1";
+          vec.style.whiteSpace = "pre";
+          vec.textContent = SAMPLE.replace(" — ", " - ");
+          const cap = document.createElement("div");
+          cap.className = "cap";
+          cap.textContent = `${family} @ ${px}px vs ${name}.png`;
+          box.append(cap, vec, await bitmapLine(name, SAMPLE.replace(" — ", " - "), 1));
+          document.getElementById("cmp").appendChild(box);
+        }
+      } catch (e) {
+        status.innerHTML = `<span class="err">font load failed: ${e}</span>`;
+        window.__fontsOk = false;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panorama compression compare</title>
+    <style>
+      :root {
+        --bg: #111316;
+        --panel: #1b1e23;
+        --line: #2c3139;
+        --text: #e6e6e6;
+        --muted: #9aa3ad;
+        --accent: #ffd166;
+        --left: #6cc4ff;
+        --right: #ff9f6c;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+        font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      body { display: flex; flex-direction: column; overflow: hidden; }
+      select, button { font: inherit; color: var(--text); background: #252a31; border: 1px solid #3a414b;
+        border-radius: 6px; padding: 4px 8px; }
+      button { cursor: pointer; }
+      button:hover, select:hover { border-color: #5a6470; }
+
+      #bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px;
+        background: var(--panel); border-bottom: 1px solid var(--line); }
+      #bar h1 { margin: 0 8px 0 0; font-size: 15px; font-weight: 600; }
+      #node { min-width: 22em; }
+      #counter { color: var(--muted); font-variant-numeric: tabular-nums; }
+      #gamezoom { color: var(--muted); }
+      #hint { margin-left: auto; color: var(--muted); font-size: 12px; }
+      kbd { font: 11px ui-monospace, Menlo, monospace; border: 1px solid #4a525d; border-bottom-width: 2px;
+        border-radius: 4px; padding: 0 4px; background: #23272d; }
+
+      #panes { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--line);
+        min-height: 0; }
+      .pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg); }
+      .info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 6px 10px;
+        background: var(--panel); border-bottom: 1px solid var(--line); min-height: 44px; }
+      .side { font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 12px; }
+      #pane-left .side { color: var(--left); }
+      #pane-right .side { color: var(--right); }
+      .stats { display: flex; flex-wrap: wrap; gap: 2px 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+      .stats b { color: var(--text); font-weight: 600; }
+      .viewer { position: relative; flex: 1; min-height: 0; }
+      .badge { position: absolute; top: 8px; left: 8px; z-index: 95; padding: 3px 8px; border-radius: 5px;
+        background: rgba(0, 0, 0, 0.7); font: 600 13px ui-monospace, Menlo, monospace; pointer-events: none; }
+      #pane-left .badge { color: var(--left); }
+      #pane-right .badge { color: var(--right); }
+
+      #foot { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 5px 12px; background: var(--panel);
+        border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+      #foot b { color: var(--text); font-weight: 600; }
+      #error { display: none; padding: 16px; color: #ff8080; }
+
+      @media (max-width: 800px) {
+        #panes { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+        #hint { display: none; }
+        #node { min-width: 0; flex: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <h1>Panorama compression</h1>
+      <button id="prev" type="button" title="Previous node (←)">◀</button>
+      <select id="node" aria-label="Node"></select>
+      <button id="next" type="button" title="Next node (→)">▶</button>
+      <span id="counter"></span>
+      <button id="swap" type="button" title="Swap sides (Space)">⇄ swap</button>
+      <span id="gamezoom">as in the game:
+        <button id="game-default" type="button" title="Zoom the panes to the texel density a full-window game shows at its default zoom">default zoom</button>
+        <button id="game-max" type="button" title="Zoom the panes to the texel density a full-window game shows at its maximum zoom (FOV 30°)">max zoom</button>
+      </span>
+      <span id="hint"><kbd>←</kbd> <kbd>→</kbd> node · <kbd>Space</kbd> swap sides · drag / wheel moves both views</span>
+    </div>
+    <div id="panes">
+      <section class="pane" id="pane-left">
+        <div class="info">
+          <span class="side">Left</span>
+          <select class="variant" aria-label="Left variant"></select>
+          <span class="stats"></span>
+        </div>
+        <div class="viewer"><span class="badge"></span></div>
+      </section>
+      <section class="pane" id="pane-right">
+        <div class="info">
+          <span class="side">Right</span>
+          <select class="variant" aria-label="Right variant"></select>
+          <span class="stats"></span>
+        </div>
+        <div class="viewer"><span class="badge"></span></div>
+      </section>
+    </div>
+    <div id="foot"></div>
+    <div id="error"></div>
+    <script type="module" src="/dev/compare.ts"></script>
+  </body>
+</html>

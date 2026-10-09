@@ -1,0 +1,218 @@
+# Gothic II Guessr: nginx site. Rendered by deploy/scripts/tls.sh into /etc/nginx/sites-available/gothic-guessr
+# (__DOMAIN__ is replaced, __ADMIN_PATH__ by ADMIN_PATH from /etc/gothic-guessr/env, so the rendered file is root
+# 0640), enabled through a symlink in sites-enabled. Debian's nginx.conf includes this file inside
+# http {}, so the zones and the upstream below are http-level.
+#
+#   /data/*            the public dataset straight from disk (/opt/gothic-guessr/www/data); panos/ and <slug>/map/
+#                      are immutable (keys and tile paths never change content), JSON gets 5 minutes
+#   /assets/*, /ui/*   the built client straight from disk (hashed names → immutable; ui/ → 5 minutes, as the app)
+#   /api/*             Node on 127.0.0.1:8787
+#   /ws                Node, WebSocket upgrade
+#   everything else    Node: SPA shell with History-API fallback (/<ADMIN_PATH>* → admin.html)
+#
+# Client address: X-Forwarded-For is SET to $remote_addr (not appended), so the app (TRUST_PROXY=1, which takes the
+# last entry, server/core/ip.ts) always sees the TCP peer nginx saw, whatever the client put in its own header.
+#
+# Limits here are a coarse first line per address; the app keeps its own finer limits (server/core/ratelimit.ts:
+# node lookups 10/s and guesses 2/s per token, hits 60/min per IP, admin login 5/15 min per IP; rooms/hub.ts:
+# at most 64 sockets per IP). nginx keys IPv6 by full address, the app by /64.
+
+limit_req_zone  $binary_remote_addr zone=g2_api:10m   rate=20r/s;
+limit_req_zone  $binary_remote_addr zone=g2_login:1m  rate=6r/m;
+limit_req_zone  $binary_remote_addr zone=g2_ws:2m     rate=2r/s;
+limit_req_zone  $binary_remote_addr zone=g2_data:10m  rate=150r/s;
+limit_conn_zone $binary_remote_addr zone=g2_conn:10m;
+
+upstream g2_node {
+    server 127.0.0.1:8787;
+    keepalive 16;
+}
+
+# Anything that is not our name (scanners hitting the bare IP): ACME challenges still work, the rest is dropped.
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    server_tokens off;
+    access_log off;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type text/plain;
+    }
+    location / {
+        return 444;
+    }
+}
+
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    server_name _;
+    ssl_reject_handshake on;
+}
+
+# Plain HTTP for our name: ACME webroot + redirect to HTTPS.
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __DOMAIN__;
+    server_tokens off;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type text/plain;
+    }
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name __DOMAIN__;
+    server_tokens off;
+
+    ssl_certificate     /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;
+    # Mozilla "intermediate" profile.
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:g2_ssl:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    access_log /var/log/nginx/gothic-guessr.access.log;
+    error_log  /var/log/nginx/gothic-guessr.error.log warn;
+
+    client_max_body_size 64k;
+    limit_req_status  429;
+    limit_conn_status 429;
+
+    # Compression for text only; WebP tiles are already compressed. Brotli is added by
+    # snippets/gothic-guessr-brotli.conf when bootstrap.sh found the Debian module (an empty glob is fine).
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_types application/javascript text/javascript text/css application/json;
+    include /etc/nginx/snippets/gothic-guessr-brotli*.conf;
+
+    # Security headers (server level; every location with its own add_header includes the snippet again,
+    # because add_header in a location drops the inherited ones).
+    include /etc/nginx/snippets/gothic-guessr-headers.conf;
+
+    # Proxy defaults for every Node location (proxy_set_header is inherited only by locations that set none).
+    proxy_http_version 1.1;
+    proxy_set_header Connection        "";
+    proxy_set_header Host              $host;
+    proxy_set_header X-Forwarded-For   $remote_addr;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 60s;
+
+    # ---- public dataset ---------------------------------------------------------------------------------------
+    location ^~ /data/ {
+        root /opt/gothic-guessr/www;
+        limit_req  zone=g2_data burst=600 nodelay;
+        limit_conn g2_conn 128;
+        autoindex off;
+        log_not_found off;
+        open_file_cache max=20000 inactive=120s;
+        open_file_cache_valid 300s;
+        add_header Cache-Control "public, max-age=300";
+        include /etc/nginx/snippets/gothic-guessr-headers.conf;
+
+        # Private manifests never live under www/, this is a second guard (as in server/app.ts);
+        # dot paths cover rsync's .rsync-partial while a push is running.
+        location ~* (?:/manifest\.json$|/\.) {
+            return 404;
+        }
+
+        # Pano tiles: no Last-Modified/ETag (a file's mtime would hint at its world and render order),
+        # and conditional requests are ignored so validators cannot be probed either.
+        location ^~ /data/panos/ {
+            access_log off;
+            etag off;
+            if_modified_since off;
+            add_header Last-Modified "";
+            add_header Cache-Control "public, max-age=31536000, immutable";
+            include /etc/nginx/snippets/gothic-guessr-headers.conf;
+            location ~ /\. {
+                return 404;
+            }
+        }
+
+        location ~ ^/data/[^/]+/map/ {
+            access_log off;
+            add_header Cache-Control "public, max-age=31536000, immutable";
+            include /etc/nginx/snippets/gothic-guessr-headers.conf;
+        }
+    }
+
+    # ---- built client from disk -------------------------------------------------------------------------------
+    location ^~ /assets/ {
+        root /opt/gothic-guessr/app/dist;
+        access_log off;
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        include /etc/nginx/snippets/gothic-guessr-headers.conf;
+    }
+
+    location ^~ /ui/ {
+        root /opt/gothic-guessr/app/dist;
+        access_log off;
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=300";
+        include /etc/nginx/snippets/gothic-guessr-headers.conf;
+    }
+
+    # ---- API and WebSocket ------------------------------------------------------------------------------------
+    location ^~ /api/ {
+        limit_req zone=g2_api burst=60 nodelay;
+        error_page 429 = @g2_rate_limited;
+        proxy_pass http://g2_node;
+    }
+
+    location = /api/__ADMIN_PATH__/login {
+        limit_req zone=g2_login burst=5 nodelay;
+        error_page 429 = @g2_rate_limited;
+        proxy_pass http://g2_node;
+    }
+
+    location = /ws {
+        limit_req  zone=g2_ws burst=10 nodelay;
+        limit_conn g2_conn 64;
+        proxy_pass http://g2_node;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade           $http_upgrade;
+        proxy_set_header Connection        "upgrade";
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-For   $remote_addr;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # The hub pings every 30 s; idle sockets stay open well past that.
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_buffering off;
+    }
+
+    location @g2_rate_limited {
+        default_type application/json;
+        add_header Retry-After 1 always;
+        add_header Cache-Control "no-store" always;
+        include /etc/nginx/snippets/gothic-guessr-headers.conf;
+        return 429 '{"error":"rate_limited"}';
+    }
+
+    # ---- SPA shell and anything else: Node --------------------------------------------------------------------
+    location / {
+        limit_req zone=g2_api burst=60 nodelay;
+        proxy_pass http://g2_node;
+    }
+}

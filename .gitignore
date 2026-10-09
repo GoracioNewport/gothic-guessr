@@ -1,0 +1,44 @@
+node_modules/
+dist/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+# generated game data (large)
+public/data/
+out/
+# private server data (manifests with node keys, database) and local secrets
+server-data/
+.env
+.env.*
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+dist-server/
+# Game-derived files (Gothic II belongs to THQ Nordic / Piranha Bytes) are never committed. The UI assets are rebuilt
+# from your own copy of the game with `npm run assets` (README: "Reproduce from your own copy of the game").
+public/ui/gothic/
+# renders and screenshots of the game kept next to the docs (each folder keeps only its README)
+docs/recon/*
+!docs/recon/README.md
+docs/compare/*
+!docs/compare/README.md
+docs/og-preview/*
+!docs/og-preview/README.md
+docs/stage3-screens/*
+!docs/stage3-screens/README.md
+docs/stage3-polish-screens/*
+!docs/stage3-polish-screens/README.md
+docs/**/*.png
+docs/**/*.jpg
+docs/**/*.jpeg
+docs/**/*.webp
+# local agent/editor settings
+.claude/
+.idea/
+.vscode/
+# QA contact sheets and other ad-hoc renders written to the repository root
+/*.jpg
+/*.png
+/*.webp

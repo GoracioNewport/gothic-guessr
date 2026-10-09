@@ -1,0 +1,12 @@
+# Security headers of Gothic II Guessr (rendered by deploy/scripts/tls.sh into
+# /etc/nginx/snippets/gothic-guessr-headers.conf). Included at server level and again in every location that has its
+# own add_header. The CSP was checked against the production build: menu, solo round with the viewer and the map,
+# admin, daily (no violations). 'unsafe-inline' for styles is needed by Photo Sphere Viewer and Leaflet (style
+# attributes). HSTS is one year without includeSubDomains/preload: add those only when every subdomain is HTTPS.
+add_header Strict-Transport-Security "max-age=31536000" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "DENY" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()" always;
+add_header Cross-Origin-Opener-Policy "same-origin" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://__DOMAIN__; worker-src 'self' blob:; media-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;

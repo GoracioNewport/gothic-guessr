@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guess map harness</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #111; color: #eee; font: 13px/1.4 system-ui, sans-serif; }
+      #map { position: absolute; inset: 0; }
+      /* What the screens module would do for the collapsed widget: toggled by the "Toggle size" button. */
+      #map.small { inset: auto 16px 16px auto; width: 320px; height: 220px; border: 2px solid #fff; }
+      #panel { position: absolute; top: 44px; right: 12px; z-index: 1000; background: rgba(0,0,0,.75);
+        padding: 10px 12px; border-radius: 6px; max-width: 360px; }
+      #panel button { margin: 0 6px 6px 0; }
+      #log { white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="panel">
+      <button id="result">Show result (answer 300 m away)</button>
+      <button id="wrong">Wrong-world result</button>
+      <button id="others">Room result (other players)</button>
+      <button id="clear">Clear</button>
+      <button id="fit">Fit world</button>
+      <button id="size">Toggle size</button>
+      <button id="reinit">Destroy + init</button>
+      <div id="log">Loading manifest…</div>
+    </div>
+    <script type="module" src="./map.ts"></script>
+  </body>
+</html>

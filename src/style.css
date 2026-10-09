@@ -1,0 +1,2974 @@
+/* Gothic II Guessr — global styles and the four screens built by src/ui/screens.ts.
+   Gothic II in-game menu look (SPEC §9.6): assets from public/ui/gothic, served at /ui/gothic. */
+
+/* Fallback family (SPEC §10.8, docs/FONTS.md) for characters no game font has (« » … * [ ], nicknames in another
+   script). Only the subsets the UI needs; unicode-range downloads a subset only when such a character is on the page. */
+@import '@fontsource/alegreya/latin-400.css';
+@import '@fontsource/alegreya/latin-ext-400.css';
+@import '@fontsource/alegreya/cyrillic-400.css';
+@import '@fontsource/alegreya/latin-700.css';
+@import '@fontsource/alegreya/latin-ext-700.css';
+@import '@fontsource/alegreya/cyrillic-700.css';
+
+@font-face {
+  font-family: 'Gothic Old';
+  src:
+    url('/ui/gothic/fonts/GothicOld.woff2') format('woff2'),
+    url('/ui/gothic/fonts/GothicOld.woff') format('woff'),
+    url('/ui/gothic/fonts/GothicOld.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gothic Default';
+  src:
+    url('/ui/gothic/fonts/GothicDefault.woff2') format('woff2'),
+    url('/ui/gothic/fonts/GothicDefault.woff') format('woff'),
+    url('/ui/gothic/fonts/GothicDefault.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* The Russian (cp1251) and Polish (cp1250) releases' own atlases of the same two fonts (docs/FONTS.md). Used only
+   under :lang(ru) / :lang(pl), so en/de pages never download them. The Russian FONT_OLD_20_WHITE atlas is 35 px
+   tall where the others are 32 px; its web font maps 35 px to 1 em, so size-adjust scales it back to the game's
+   pixel size (35 / 32). size-adjust scales the metric overrides too: 68.57 % / 22.86 % become the 750 / 250 of
+   'Gothic Old', so a line keeps the same 1 em box in every language. */
+@font-face {
+  font-family: 'Gothic Old RU';
+  src:
+    url('/ui/gothic/fonts/GothicOldRU.woff2') format('woff2'),
+    url('/ui/gothic/fonts/GothicOldRU.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  size-adjust: 109.375%;
+  ascent-override: 68.57%;
+  descent-override: 22.86%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Gothic Default RU';
+  src:
+    url('/ui/gothic/fonts/GothicDefaultRU.woff2') format('woff2'),
+    url('/ui/gothic/fonts/GothicDefaultRU.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Gothic Old PL';
+  src:
+    url('/ui/gothic/fonts/GothicOldPL.woff2') format('woff2'),
+    url('/ui/gothic/fonts/GothicOldPL.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Gothic Default PL';
+  src:
+    url('/ui/gothic/fonts/GothicDefaultPL.woff2') format('woff2'),
+    url('/ui/gothic/fonts/GothicDefaultPL.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* palette, sampled from MENU_INGAME / MENU_CHOICE_BACK */
+  --g2-bg: #0b0906;
+  --g2-panel-fill: rgba(8, 6, 3, 0.6); /* under the panel texture's own ~47% black */
+  --g2-panel-solid: rgba(10, 8, 5, 0.86); /* small HUD panels over the panorama */
+  --g2-row: rgba(0, 0, 0, 0.38);
+  --g2-row-hover: rgba(201, 164, 76, 0.08);
+  --g2-row-on: rgba(201, 164, 76, 0.13);
+  --g2-gold: #c9a44c;
+  --g2-gold-bright: #f3d68a;
+  --g2-gold-dim: #8a7140;
+  --g2-gold-line: rgba(201, 164, 76, 0.45);
+  --g2-gold-faint: rgba(201, 164, 76, 0.18);
+  --g2-text: #e4d8bd;
+  --g2-muted: #ab9b7c;
+  --g2-danger: #e0745a;
+  --g2-guess: #2f80ed;
+  --g2-sea: #2a4d73;
+  --g2-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --g2-text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.85);
+  --g2-glow: 0 0 10px rgba(243, 214, 138, 0.45);
+
+  /* type */
+  /* Alegreya right after the game fonts: characters they lack (— … · « », Cyrillic or Polish nicknames in an
+     en/de UI) come from the same fallback family pl/ru use, not from a random system serif. unicode-range
+     downloads its subset only when such a character is on the page. */
+  --g2-font-display: 'Gothic Old', 'Alegreya', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --g2-font-text: 'Gothic Default', 'Alegreya', 'Palatino Linotype', Palatino, Georgia, serif;
+  --g2-size-title: 44px;
+  --g2-size-heading: 34px;
+  --g2-size-legend: 24px;
+  --g2-size-button: 22px;
+  --g2-size-text: 18px;
+  --g2-size-small: 15px;
+  --g2-size-stat: 40px;
+
+  /* game textures and their 9-slice insets (texture px) */
+  --g2-tex-panel: url('/ui/gothic/MENU_INGAME.png');
+  --g2-tex-choice: url('/ui/gothic/MENU_CHOICE_BACK.png');
+  --g2-tex-glow: url('/ui/gothic/MENU_BUTTONBACK.png');
+  --g2-tex-input: url('/ui/gothic/MENU_INPUT_BACK.png');
+  --g2-tex-bar-back: url('/ui/gothic/BAR_BACK.png');
+  --g2-tex-bar-fill: url('/ui/gothic/BAR_MISC.png');
+  --g2-tex-logo: url('/ui/gothic/MENU_GOTHIC_G2.png'); /* the classic Gothic II logo (Textures.vdf) */
+  --g2-tex-backdrop: url('/ui/gothic/MENU_BACK_ADDON.webp'); /* Night of the Raven start screen: water mages */
+  --g2-panel-edge: 12px; /* MENU_INGAME: gold line at 5–7 px, translucent fill from 8 px */
+  --g2-choice-edge: 6px; /* MENU_CHOICE_BACK: 3 px gold rim + 3 px bevel */
+
+  font-family: var(--g2-font-text);
+  font-size: var(--g2-size-text);
+  background: var(--g2-bg);
+  color: var(--g2-text);
+}
+
+/* pl / ru: the localised releases' game fonts (cp1250 / cp1251 atlases, ASCII included, so a word never mixes
+   two fonts). Behind them the English game font (× and Latin-1 letters such as ñ that the code page lacks), then
+   Alegreya for what no game font has (« » … *). `:lang()` matches every element of that language (html[lang] or a
+   nested [lang], e.g. the names in the language selector), and elements that set font-family from these
+   variables pick it up. */
+:lang(pl) {
+  --g2-font-display: 'Gothic Old PL', 'Gothic Old', 'Alegreya', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --g2-font-text: 'Gothic Default PL', 'Gothic Default', 'Alegreya', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+
+:lang(ru) {
+  --g2-font-display: 'Gothic Old RU', 'Gothic Old', 'Alegreya', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --g2-font-text: 'Gothic Default RU', 'Gothic Default', 'Alegreya', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---- layout primitives ---------------------------------------------------------------- */
+
+.g2-root {
+  position: relative;
+}
+
+.g2-screen {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+}
+
+.g2-centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  overflow-y: auto;
+  /* Non-round pages sit on the game's start screen (water mages in blue smoke), darkened towards the edges so the
+     panels stay readable; until it loads (or without it) the dark gradient alone is the background. The mages stand
+     right of centre: keep them in view when the screen is narrower than 4:3. */
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0.05) 35%, rgba(0, 0, 0, 0.7) 100%),
+    var(--g2-tex-backdrop) 68% 40% / cover no-repeat,
+    radial-gradient(ellipse at 50% 35%, rgba(201, 164, 76, 0.1), transparent 65%),
+    radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.7) 100%),
+    var(--g2-bg);
+}
+
+/* The in-game menu panel: MENU_INGAME as a 9-slice frame. Its middle is ~47% black, so a dark
+   fill below keeps text readable over the panorama. */
+.g2-card,
+.g2-panel,
+.g2-map-widget {
+  box-sizing: border-box;
+  border: var(--g2-panel-edge) solid transparent;
+  border-image: var(--g2-tex-panel) 12 fill / var(--g2-panel-edge) stretch;
+  background: var(--g2-panel-fill);
+  background-clip: padding-box;
+  box-shadow: var(--g2-shadow);
+}
+
+.g2-card {
+  width: min(640px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-color: var(--g2-gold-dim) transparent;
+}
+
+.g2-panel {
+  background-color: var(--g2-panel-solid);
+}
+
+/* Boot message (main.ts): "Loading the worlds…" or a fatal load error, in a small panel. */
+.g2-boot-card {
+  width: min(420px, 100%);
+  align-items: center;
+  text-align: center;
+}
+
+.g2-boot-text {
+  margin: 0;
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-legend);
+  color: var(--g2-gold);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-boot-error {
+  font-family: var(--g2-font-text);
+  font-size: var(--g2-size-text);
+  color: var(--g2-danger);
+  overflow-wrap: anywhere;
+}
+
+/* ---- typography ----------------------------------------------------------------------- */
+
+.g2-logo {
+  flex: none;
+  align-self: center;
+  width: min(300px, 100%);
+  /* MENU_GOTHIC_G2: the logo occupies x 195–806, y 50–215 of the 1024×256 texture */
+  aspect-ratio: 611 / 165;
+  background: var(--g2-tex-logo) no-repeat;
+  background-size: calc(100% * 1024 / 611) auto;
+  background-position: calc(100% * 195 / 413) calc(100% * 50 / 91);
+  filter: drop-shadow(0 2px 3px #000);
+}
+
+.g2-title,
+.g2-heading {
+  margin: 0;
+  font-family: var(--g2-font-display);
+  font-weight: 400;
+  line-height: 1.05;
+  color: var(--g2-gold);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-title {
+  font-size: var(--g2-size-title);
+  text-align: center;
+}
+
+.g2-heading {
+  font-size: var(--g2-size-heading);
+}
+
+.g2-tagline {
+  margin: -10px 0 0;
+  text-align: center;
+  color: var(--g2-muted);
+}
+
+.g2-howto {
+  margin: 0;
+  padding-left: 22px;
+  line-height: 1.4;
+}
+
+.g2-howto li::marker {
+  color: var(--g2-gold);
+}
+
+.g2-best {
+  margin: 0;
+  color: var(--g2-muted);
+}
+
+.g2-new-best {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-legend);
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-glow);
+}
+
+.g2-accent {
+  color: var(--g2-gold-bright);
+}
+
+.g2-kbd {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 0 5px;
+  font: var(--g2-size-small) / 1.3 var(--g2-font-text);
+  color: var(--g2-gold-dim);
+  border: 1px solid var(--g2-gold-faint);
+  border-bottom-width: 2px;
+  vertical-align: middle;
+  text-shadow: none;
+}
+
+/* ---- controls ------------------------------------------------------------------------- */
+
+/* Buttons: MENU_CHOICE_BACK (dark bar with a golden rim) as a 9-slice frame. */
+.g2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2px 14px;
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  line-height: 1.2;
+  color: var(--g2-gold);
+  background: transparent;
+  border: var(--g2-choice-edge) solid transparent;
+  border-image: var(--g2-tex-choice) 6 fill / var(--g2-choice-edge) stretch;
+  border-radius: 0;
+  text-shadow: var(--g2-text-shadow);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    color 0.12s,
+    filter 0.12s,
+    opacity 0.12s;
+}
+
+.g2-btn:hover:not(:disabled) {
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-text-shadow), var(--g2-glow);
+  filter: brightness(1.15);
+}
+
+.g2-btn:focus-visible {
+  outline: 1px solid var(--g2-gold-bright);
+  outline-offset: 2px;
+}
+
+.g2-btn:disabled {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+  cursor: not-allowed;
+}
+
+/* Primary: the selected menu entry — warm fill behind the rim, brighter gold text. */
+.g2-btn-primary {
+  color: var(--g2-gold-bright);
+  border-image: var(--g2-tex-choice) 6 / var(--g2-choice-edge) stretch;
+  background:
+    var(--g2-tex-glow) center / 100% 100% no-repeat,
+    linear-gradient(180deg, #3d2b10 0%, #22180a 55%, #160f06 100%);
+  background-clip: padding-box;
+}
+
+.g2-btn-big {
+  padding: 4px 22px;
+  font-size: calc(var(--g2-size-button) + 4px);
+  align-self: stretch;
+}
+
+/* The setup card may scroll on short screens; its Start row stays in view. */
+.g2-start .g2-start-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex: none;
+}
+
+/* Inputs: MENU_INPUT_BACK (flat translucent black) with a faint gold hairline. */
+.g2-input {
+  box-sizing: border-box;
+  padding: 3px 8px;
+  font: inherit;
+  color: var(--g2-text);
+  background: transparent;
+  border: 4px solid transparent;
+  border-image: var(--g2-tex-input) 4 fill / 4px stretch;
+  box-shadow: inset 0 0 0 1px var(--g2-gold-line);
+  border-radius: 0;
+}
+
+.g2-input:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--g2-gold);
+}
+
+/* Checkboxes (worlds, toggles): an inventory-slot style square with a golden frame; checked =
+   a gold rhombus and a brighter frame. */
+.g2-world-box,
+.g2-toggle-box {
+  appearance: none;
+  flex: none;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.6) center / 12px 12px no-repeat;
+  border: 1px solid var(--g2-gold-dim);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    inset 0 0 6px rgba(0, 0, 0, 0.9);
+  cursor: inherit;
+}
+
+.g2-world-box:checked,
+.g2-toggle-box:checked {
+  border-color: var(--g2-gold-bright);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23f3d68a'/%3E%3Cstop offset='1' stop-color='%23a97f2e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M6 0 12 6 6 12 0 6z' fill='url(%23g)'/%3E%3C/svg%3E");
+  box-shadow:
+    inset 0 0 0 1px #000,
+    0 0 6px rgba(243, 214, 138, 0.35);
+}
+
+.g2-world-box:focus-visible,
+.g2-toggle-box:focus-visible {
+  outline: 1px solid var(--g2-gold-bright);
+  outline-offset: 2px;
+}
+
+/* ---- start screen --------------------------------------------------------------------- */
+
+.g2-legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-legend);
+  color: var(--g2-gold);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-field-error,
+.g2-seed-error {
+  font-size: var(--g2-size-small);
+  color: var(--g2-danger);
+}
+
+.g2-field-error {
+  margin: 6px 0 0;
+}
+
+.g2-seed-error {
+  margin: -8px 0 0;
+}
+
+.g2-worlds,
+.g2-toggles,
+.g2-mode {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.g2-world-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* World rows and toggles: menu entries; the enabled ones glow like the selected menu item. */
+.g2-world,
+.g2-toggle {
+  display: flex;
+  gap: 12px;
+  padding: 6px 10px;
+  background: var(--g2-row);
+  border: 1px solid var(--g2-gold-faint);
+  cursor: pointer;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+}
+
+.g2-world {
+  align-items: center;
+}
+
+.g2-world:hover,
+.g2-toggle:hover {
+  background-color: var(--g2-row-hover);
+}
+
+.g2-world-on,
+.g2-toggle-on {
+  background: linear-gradient(90deg, var(--g2-row-on), transparent 80%), var(--g2-row);
+  border-color: var(--g2-gold-line);
+}
+
+.g2-world-unavailable,
+.g2-toggle-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.g2-world-unavailable .g2-world-thumb {
+  filter: grayscale(1);
+}
+
+.g2-world-thumb {
+  flex: none;
+  width: 56px;
+  height: 42px;
+  object-fit: cover;
+  background: var(--g2-sea);
+}
+
+/* The painted in-game maps (2:1 parchment with torn edges) are shown whole. */
+.g2-world-thumb-art {
+  width: 84px;
+  object-fit: contain;
+  background: none;
+  filter: drop-shadow(0 1px 2px #000);
+}
+
+.g2-world-thumb-missing {
+  visibility: hidden;
+}
+
+.g2-world-text {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.g2-world-name,
+.g2-toggle-name {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  line-height: 1.1;
+  color: var(--g2-gold);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-world-on .g2-world-name,
+.g2-toggle-on .g2-toggle-name {
+  color: var(--g2-gold-bright);
+}
+
+.g2-world-desc,
+.g2-toggle-hint {
+  font-size: var(--g2-size-small);
+  color: var(--g2-muted);
+}
+
+.g2-world-error {
+  margin-top: 2px;
+  font-size: var(--g2-size-small);
+  color: var(--g2-danger);
+}
+
+.g2-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.g2-toggles .g2-legend {
+  width: 100%;
+}
+
+.g2-toggle {
+  flex: 1 1 200px;
+  align-items: flex-start;
+}
+
+.g2-toggle .g2-toggle-box {
+  margin-top: 1px;
+}
+
+.g2-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.25;
+}
+
+/* Mode: a row of menu choices; the active one gets the MENU_CHOICE_BACK frame. */
+.g2-mode-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  background: var(--g2-row);
+  border: 1px solid var(--g2-gold-faint);
+}
+
+.g2-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  line-height: 1.25;
+  color: var(--g2-gold-dim);
+  text-shadow: var(--g2-text-shadow);
+  border: var(--g2-choice-edge) solid transparent;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.12s;
+}
+
+.g2-pill:hover {
+  color: var(--g2-gold);
+}
+
+.g2-pill-active,
+.g2-pill-active:hover {
+  color: var(--g2-gold-bright);
+  border-image: var(--g2-tex-choice) 6 fill / var(--g2-choice-edge) stretch;
+  text-shadow: var(--g2-text-shadow), var(--g2-glow);
+}
+
+/* The radio itself is visually hidden but stays focusable; the pill shows the focus ring. */
+.g2-pill-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.g2-pill:has(.g2-pill-input:focus-visible) {
+  outline: 1px solid var(--g2-gold-bright);
+  outline-offset: 2px;
+}
+
+.g2-mode-desc {
+  margin: 6px 0 0;
+  min-height: 2.5em;
+  font-size: var(--g2-size-small);
+  line-height: 1.25;
+  color: var(--g2-muted);
+}
+
+.g2-seed-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--g2-muted);
+}
+
+.g2-seed-row .g2-input {
+  width: 160px;
+}
+
+.g2-input.g2-invalid {
+  box-shadow: inset 0 0 0 1px var(--g2-danger);
+}
+
+/* ---- score bar (BAR_BACK + BAR_MISC, the HUD bars) -------------------------------------- */
+
+/* BAR_BACK is 256×32 with ~14 px end caps and ~10 px top/bottom rims; drawn at 0.7× scale. */
+.g2-bar {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 180px;
+  height: 24px;
+  border-style: solid;
+  border-color: transparent;
+  border-width: 7px 10px;
+  border-image: var(--g2-tex-bar-back) 10 14 fill / 7px 10px stretch;
+}
+
+.g2-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: var(--g2-tex-bar-fill) left center / auto 100% repeat-x;
+  transition: width 0.4s ease-out;
+}
+
+/* ---- round screen --------------------------------------------------------------------- */
+
+.g2-round {
+  background: #000;
+  overflow: hidden;
+}
+
+.g2-pano {
+  position: absolute;
+  inset: 0;
+  /* Own stacking context: Photo Sphere Viewer's arrows (z 11), navbar (90) and loader (80) must
+     stay below the HUD (10) and the result overlay (20). */
+  z-index: 0;
+}
+
+/* The HUD layer is transparent to the pointer; its children opt back in. */
+.g2-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.g2-hud > * {
+  pointer-events: auto;
+}
+
+.g2-hud-left {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.g2-hud-left > * {
+  pointer-events: auto;
+}
+
+.g2-hud-info {
+  padding: 2px 10px 8px;
+  min-width: 220px;
+}
+
+/* Extras of room games (ticks, duel HP bars) go here; empty for solo games. */
+.g2-hud-slot:empty {
+  display: none;
+}
+
+/* Round countdown (top centre). */
+.g2-countdown {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 14px 4px;
+}
+
+.g2-countdown[hidden] {
+  display: none;
+}
+
+.g2-countdown-label {
+  font-size: var(--g2-size-small);
+  color: var(--g2-muted);
+}
+
+.g2-countdown-value {
+  min-width: 3.2em;
+  font-family: var(--g2-font-display);
+  font-size: 32px;
+  line-height: 1.1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-countdown[data-level='warn'] .g2-countdown-value {
+  color: #f0b04a;
+}
+
+.g2-countdown[data-level='urgent'] .g2-countdown-value,
+.g2-countdown[data-level='over'] .g2-countdown-value {
+  color: var(--g2-danger);
+  animation: g2-pulse 1s ease-in-out infinite;
+}
+
+@keyframes g2-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.g2-hud-round {
+  font-family: var(--g2-font-display);
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--g2-gold);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-hud-score {
+  margin: 0 0 4px;
+  color: var(--g2-muted);
+}
+
+.g2-hud-score-value {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-hud-topright {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Over the panorama the choice texture alone is too see-through. */
+.g2-hud .g2-btn,
+.g2-badge {
+  background-color: rgba(0, 0, 0, 0.55);
+  background-clip: padding-box;
+}
+
+/* Small badges for the active toggles (No move / No look). */
+.g2-badges {
+  display: flex;
+  gap: 6px;
+}
+
+.g2-badge {
+  padding: 0 10px;
+  font-family: var(--g2-font-display);
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-text-shadow);
+  border: var(--g2-choice-edge) solid transparent;
+  border-image: var(--g2-tex-choice) 6 fill / var(--g2-choice-edge) stretch;
+  box-shadow: var(--g2-shadow);
+}
+
+/* Guess map widget (bottom-right): 280×200 collapsed, 60vw×60vh expanded. The size changes
+   without a transition so GuessMapApi.invalidateSize sees the final size immediately. */
+.g2-map-widget {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px;
+  background-color: var(--g2-panel-solid);
+  transition: box-shadow 0.15s;
+}
+
+.g2-map-widget.g2-expanded {
+  width: min(60vw, calc(100vw - 32px));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75);
+}
+
+.g2-map-mount,
+.g2-result-map {
+  overflow: hidden;
+  background: var(--g2-sea);
+  outline: 1px solid var(--g2-gold-line);
+}
+
+.g2-map-mount {
+  height: 200px;
+}
+
+.g2-expanded .g2-map-mount {
+  height: min(60vh, calc(100vh - 160px));
+}
+
+.g2-map-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: var(--g2-size-small);
+  color: var(--g2-muted);
+}
+
+.g2-map-hint {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.g2-pin {
+  flex: none;
+  padding: 0 6px;
+  font: var(--g2-size-small) / 1.4 var(--g2-font-text);
+  color: var(--g2-gold-dim);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--g2-gold-faint);
+  cursor: pointer;
+}
+
+.g2-pin:hover {
+  color: var(--g2-gold);
+}
+
+.g2-pin.g2-active {
+  color: var(--g2-gold-bright);
+  border-color: var(--g2-gold);
+  background: var(--g2-row-on);
+}
+
+.g2-guess {
+  width: 100%;
+}
+
+/* World tabs of the guess map (built by src/ui/guessmap.ts, which injects neutral defaults; the
+   `.g2-root` prefix wins over them). Menu entries: dim gold, the active one bright with a rim. */
+.g2-root .gm-tabs {
+  gap: 2px;
+  padding: 0 0 2px;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.g2-root .gm-tab {
+  padding: 1px 8px 0;
+  font: 400 19px/1.25 var(--g2-font-display);
+  color: var(--g2-gold-dim);
+  text-shadow: var(--g2-text-shadow);
+  background: rgba(0, 0, 0, 0.45);
+  border-bottom: 2px solid transparent;
+}
+
+/* The collapsed 300 px widget: tabs take the width their names need (equal thirds clip
+   "Valley of Mines"), at a smaller size and with a smaller marker dot. */
+.g2-root .g2-map-widget:not(.g2-expanded) .gm-tab {
+  flex: 1 1 auto;
+  padding: 1px 3px 0;
+  font-size: 14px;
+}
+
+.g2-root .g2-map-widget:not(.g2-expanded) .gm-tab-dot {
+  width: 6px;
+  height: 6px;
+  margin-left: 3px;
+}
+
+.g2-root .gm-tab:hover {
+  color: var(--g2-gold);
+  background: var(--g2-row-hover);
+}
+
+.g2-root .gm-tab:focus-visible {
+  outline: 1px solid var(--g2-gold-bright);
+}
+
+.g2-root .gm-tab-active,
+.g2-root .gm-tab-active:hover {
+  color: var(--g2-gold-bright);
+  background: linear-gradient(180deg, transparent, var(--g2-row-on));
+  border-bottom-color: var(--g2-gold);
+}
+
+.g2-root .gm-tab-dot {
+  border-color: #000;
+  box-shadow: 0 0 0 1px var(--g2-gold-bright);
+}
+
+.g2-root .gm-tab-dot-guess {
+  background: var(--g2-guess);
+}
+
+.g2-root .gm-tab-dot-answer {
+  background: var(--g2-gold-bright);
+}
+
+/* ---- result overlay ------------------------------------------------------------------- */
+
+/* The backdrop lets pointer events through so the panorama can still be dragged around the card. */
+.g2-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.g2-overlay > .g2-card {
+  pointer-events: auto;
+  background-color: var(--g2-panel-solid);
+}
+
+.g2-result {
+  width: min(760px, 100%);
+}
+
+.g2-result-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.g2-result-world {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  color: var(--g2-muted);
+}
+
+.g2-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 40px;
+}
+
+.g2-stat-value {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-stat);
+  line-height: 1.05;
+  color: var(--g2-text);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-stat-value.g2-accent {
+  color: var(--g2-gold-bright);
+}
+
+.g2-stat-value.g2-wrong-world {
+  color: var(--g2-danger);
+}
+
+.g2-stat-label {
+  margin-top: 2px;
+  font-size: var(--g2-size-small);
+  color: var(--g2-muted);
+}
+
+.g2-result-map {
+  height: min(50vh, 440px);
+  min-height: 200px;
+}
+
+/* ---- summary -------------------------------------------------------------------------- */
+
+.g2-total {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.g2-total .g2-stat-value {
+  font-size: calc(var(--g2-size-stat) + 12px);
+}
+
+.g2-summary .g2-bar {
+  height: 28px;
+  border-width: 8px 12px;
+  border-image-width: 8px 12px;
+}
+
+.g2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.g2-table th,
+.g2-table td {
+  padding: 5px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--g2-gold-faint);
+}
+
+.g2-table th:first-child,
+.g2-table td:first-child,
+.g2-table td.g2-table-world,
+.g2-table:has(td.g2-table-world) th:nth-child(2) {
+  text-align: left;
+}
+
+.g2-table th {
+  font-family: var(--g2-font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--g2-gold);
+  text-shadow: var(--g2-text-shadow);
+  border-bottom-color: var(--g2-gold-line);
+}
+
+.g2-table-wrong {
+  color: var(--g2-danger);
+}
+
+.g2-table tfoot td {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  color: var(--g2-gold-bright);
+  border-bottom: none;
+  border-top: 1px solid var(--g2-gold-line);
+}
+
+.g2-game {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.g2-game-id {
+  flex: none;
+  color: var(--g2-muted);
+}
+
+.g2-link {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--g2-size-small);
+}
+
+/* ---- small viewports (1280×720 and below) ----------------------------------------------- */
+
+@media (max-height: 800px) {
+  :root {
+    --g2-size-title: 34px;
+    --g2-size-heading: 30px;
+    --g2-size-legend: 20px;
+    --g2-size-button: 20px;
+    --g2-size-text: 16px;
+    --g2-size-small: 15px;
+    --g2-size-stat: 34px;
+  }
+
+  .g2-card {
+    padding: 8px 20px 12px;
+    gap: 6px;
+  }
+
+  .g2-start .g2-card {
+    width: min(700px, 100%);
+  }
+
+  .g2-logo {
+    width: min(260px, 100%);
+  }
+
+  .g2-tagline {
+    margin-top: -6px;
+  }
+
+  .g2-howto {
+    font-size: var(--g2-size-small);
+    line-height: 1.3;
+  }
+
+  .g2-legend {
+    margin-bottom: 3px;
+  }
+
+  .g2-world {
+    padding: 3px 10px;
+  }
+
+  .g2-world-thumb {
+    height: 32px;
+  }
+
+  .g2-world-thumb-art {
+    width: 64px;
+  }
+
+  /* Two lines hold every current description; longer ones end in an ellipsis (full text in the
+     title tooltip). */
+  .g2-world-desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .g2-toggle {
+    padding: 4px 10px;
+  }
+
+  .g2-mode-desc {
+    margin-top: 4px;
+  }
+
+  .g2-result-map {
+    height: min(44vh, 340px);
+  }
+}
+
+/* Leaflet zoom buttons on the guess/result maps, in the panel palette. */
+.g2-root .leaflet-bar {
+  border: 1px solid var(--g2-gold-line);
+  box-shadow: var(--g2-shadow);
+}
+
+.g2-root .leaflet-bar a,
+.g2-root .leaflet-bar a:hover {
+  color: var(--g2-gold);
+  background: rgba(10, 8, 5, 0.85);
+  border-bottom-color: var(--g2-gold-faint);
+}
+
+.g2-root .leaflet-bar a:hover {
+  color: var(--g2-gold-bright);
+}
+
+.g2-root .leaflet-bar a.leaflet-disabled {
+  color: var(--g2-gold-dim);
+  opacity: 0.5;
+}
+
+/* No look (panorama.ts adds .pano-frozen): the navbar would only hold PSV's menu button. */
+.pano-frozen .psv-navbar {
+  display: none;
+}
+
+/* ---- short viewports (≤ 760px, e.g. 1280×720): the start card must fit without scrolling ----- */
+
+@media (max-height: 760px) {
+  .g2-start .g2-logo {
+    width: min(180px, 100%);
+    margin-bottom: -4px;
+  }
+
+  /* The how-to is still readable from the HUD hints; drop it here to save four lines. */
+  .g2-start .g2-howto {
+    display: none;
+  }
+
+  .g2-start .g2-mode-desc {
+    display: none;
+  }
+
+  .g2-start .g2-world {
+    padding: 2px 10px;
+  }
+
+  .g2-start .g2-world-thumb {
+    height: 26px;
+  }
+
+  .g2-start .g2-card {
+    gap: 4px;
+    padding-top: 6px;
+    padding-bottom: 8px;
+  }
+}
+
+/* When the setup card does have to scroll, the sticky Start row must hide what slides under it. */
+.g2-start .g2-start-actions {
+  background-color: var(--g2-sticky-bg);
+  box-shadow: 0 -10px 12px -6px rgba(0, 0, 0, 0.9);
+}
+
+/* ---- stage 3: shared bits ---------------------------------------------------------------- */
+
+.g2-muted {
+  margin: 0;
+  color: var(--g2-muted);
+}
+
+.g2-card-wide {
+  width: min(760px, 100%);
+}
+
+.g2-btn-small {
+  padding: 0 10px;
+  font-size: calc(var(--g2-size-button) - 3px);
+}
+
+.g2-btn.g2-busy {
+  cursor: progress;
+}
+
+.g2-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.g2-actions > .g2-btn-big {
+  flex: 1 1 auto;
+}
+
+.g2-actions-end {
+  justify-content: flex-end;
+}
+
+.g2-actions-end > .g2-btn-primary {
+  flex: 1 1 auto;
+}
+
+.g2-boot-card .g2-actions {
+  justify-content: center;
+}
+
+.g2-summary-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.g2-stat-time .g2-stat-value {
+  font-size: calc(var(--g2-size-stat) - 8px);
+  color: var(--g2-muted);
+}
+
+.g2-squares {
+  font-size: 22px;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+/* Copyable link / share text with its button. */
+.g2-copy-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.g2-copy-row > .g2-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.g2-share-text {
+  resize: none;
+  font: var(--g2-size-small) / 1.35 var(--g2-font-text);
+  white-space: pre;
+  overflow: hidden;
+}
+
+.g2-copy {
+  flex: none;
+}
+
+.g2-share,
+.g2-lb,
+.g2-daily-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.g2-share .g2-legend,
+.g2-lb .g2-legend,
+.g2-daily-status .g2-legend {
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Leaderboard. */
+.g2-lb-table td.g2-lb-name,
+.g2-lb-table th:nth-child(2) {
+  text-align: left;
+}
+
+.g2-lb-name {
+  max-width: 280px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.g2-lb-me td {
+  color: var(--g2-gold-bright);
+  background: var(--g2-row-on);
+}
+
+.g2-lb-me td.g2-table-wrong {
+  color: var(--g2-danger);
+}
+
+.g2-lb-you {
+  color: var(--g2-muted);
+  font-size: var(--g2-size-small);
+}
+
+.g2-lb-gap td {
+  text-align: center !important;
+  color: var(--g2-muted);
+}
+
+/* Settings of a challenge. */
+.g2-settings {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 16px;
+  margin: 0;
+}
+
+.g2-settings dt {
+  color: var(--g2-muted);
+}
+
+.g2-settings dd {
+  margin: 0;
+}
+
+/* Transient messages. */
+.g2-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100% - 32px));
+  padding: 6px 16px;
+  color: var(--g2-text);
+  background: var(--g2-panel-solid);
+  border: 1px solid var(--g2-gold-line);
+  box-shadow: var(--g2-shadow);
+}
+
+.g2-toast-error {
+  border-color: var(--g2-danger);
+  color: #f3c2b4;
+}
+
+/* ---- main menu ------------------------------------------------------------------------- */
+
+.g2-menu-card {
+  width: min(560px, 100%);
+}
+
+.g2-nick {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.g2-nick-label {
+  color: var(--g2-muted);
+}
+
+.g2-nick-name {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-text-shadow);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.g2-nick-form,
+.g2-join,
+.g2-daily-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.g2-nick-input {
+  width: 220px;
+}
+
+.g2-nick-hint,
+.g2-nick-error {
+  margin: -4px 0 0;
+  text-align: center;
+  font-size: var(--g2-size-small);
+}
+
+/* Nickname editor (src/ui/nickname.ts). In the menu its wrapper is transparent: the line and the hint stay items of
+   the card's column. After a game it sits at the right end of the header row, the hint right-aligned under it. */
+.g2-nick-menu {
+  display: contents;
+}
+
+.g2-nick-inline {
+  margin-left: auto;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.g2-nick-inline > .g2-nick {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.g2-nick-inline .g2-nick-label {
+  flex: none;
+}
+
+.g2-nick-inline .g2-nick-name {
+  min-width: 0;
+  max-width: 220px;
+  font-size: calc(var(--g2-size-button) - 2px);
+}
+
+.g2-nick-inline .g2-nick-edit {
+  flex: none;
+}
+
+.g2-nick-inline .g2-nick-form {
+  flex-wrap: nowrap;
+}
+
+.g2-nick-inline .g2-nick-input {
+  width: 190px;
+}
+
+.g2-nick-inline > .g2-nick-hint,
+.g2-nick-inline > .g2-nick-error {
+  margin: 0;
+  text-align: right;
+}
+
+/* On a leaderboard's heading line: "Show all" (margin-left: auto) already pushes it to the right end. */
+.g2-lb-head:has(> .g2-lb-more) > .g2-lb-aside {
+  margin-left: 0;
+}
+
+.g2-menu-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.g2-menu-entry {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 4px 18px 6px;
+  text-align: left;
+}
+
+.g2-menu-entry-label {
+  font-size: calc(var(--g2-size-button) + 4px);
+}
+
+.g2-menu-entry-hint {
+  font-family: var(--g2-font-text);
+  font-size: var(--g2-size-small);
+  color: var(--g2-muted);
+  text-shadow: none;
+}
+
+.g2-friends {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--g2-row);
+  border: 1px solid var(--g2-gold-faint);
+}
+
+.g2-friends-create {
+  display: flex;
+  gap: 8px;
+}
+
+.g2-friends-create > .g2-btn {
+  flex: 1;
+}
+
+.g2-join-code {
+  width: 120px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.g2-join-label {
+  color: var(--g2-muted);
+}
+
+.g2-howto-box > summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.g2-howto-box[open] > summary {
+  margin-bottom: 4px;
+}
+
+.g2-daily-date {
+  color-scheme: dark;
+}
+
+@media (max-height: 800px) {
+  .g2-menu .g2-logo {
+    width: min(170px, 100%);
+  }
+
+  .g2-menu-entry-label {
+    font-size: var(--g2-size-button);
+  }
+
+  .g2-squares {
+    font-size: 18px;
+  }
+}
+
+/* A long leaderboard scrolls the summary card; Main menu / Play again stay in view. */
+.g2-summary .g2-actions-end {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex: none;
+  padding-top: 6px;
+  background-color: var(--g2-sticky-bg, var(--g2-bg));
+  box-shadow: 0 -10px 12px -6px rgba(0, 0, 0, 0.9);
+}
+
+@media (max-height: 760px) {
+  .g2-menu .g2-tagline {
+    display: none;
+  }
+
+  .g2-menu .g2-card {
+    gap: 6px;
+  }
+
+  .g2-menu .g2-howto {
+    font-size: var(--g2-size-small);
+  }
+}
+
+/* ---- rooms: party and duel (src/ui/lobby.ts, roomhud.ts, roompage.ts) ---------------------- */
+
+.g2-room-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.g2-room-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+.g2-room-nick {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.g2-room-you {
+  color: var(--g2-muted);
+  font-size: var(--g2-size-small);
+  white-space: nowrap;
+}
+
+/* Lobby */
+.g2-room-card {
+  width: min(1000px, 100%);
+  gap: 10px;
+}
+
+.g2-room-head {
+  justify-content: space-between;
+}
+
+.g2-room-code {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.g2-room-code-label {
+  color: var(--g2-muted);
+  font-size: var(--g2-size-small);
+}
+
+.g2-room-code-value {
+  font-family: var(--g2-font-display);
+  font-size: 34px;
+  letter-spacing: 4px;
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-glow);
+}
+
+.g2-room-body {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.g2-room-players,
+.g2-room-settings-box,
+.g2-room-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.g2-room-body .g2-legend {
+  margin-bottom: 2px;
+}
+
+.g2-room-player-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 290px;
+  overflow-y: auto;
+  scrollbar-color: var(--g2-gold-dim) transparent;
+}
+
+.g2-room-last {
+  margin-top: 6px;
+  gap: 4px;
+}
+
+.g2-room-last .g2-legend {
+  font-size: 18px;
+}
+
+.g2-room-last .g2-copy-row {
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Start / Leave stay in view when the lobby card scrolls (small windows, a full room). */
+.g2-room-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex: none;
+  padding-top: 6px;
+  background-color: var(--g2-sticky-bg, var(--g2-bg));
+  box-shadow: 0 -10px 12px -6px rgba(0, 0, 0, 0.9);
+}
+
+.g2-room-player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 2px 8px;
+  background: var(--g2-row);
+  border: 1px solid var(--g2-gold-faint);
+}
+
+.g2-room-player .g2-room-name {
+  flex: 1;
+}
+
+.g2-room-player-me {
+  border-color: var(--g2-gold-line);
+}
+
+.g2-room-player-away {
+  opacity: 0.6;
+}
+
+.g2-room-crown {
+  flex: none;
+  width: 18px;
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-glow);
+  font-family: 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', sans-serif;
+}
+
+.g2-room-away {
+  font-size: var(--g2-size-small);
+  color: var(--g2-danger);
+}
+
+.g2-room-kick {
+  min-height: 0;
+  line-height: 1.2;
+}
+
+.g2-room-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.g2-room-field .g2-legend {
+  font-size: 20px;
+}
+
+/* Host form: each setting on one line, its label floated to the left of the choices. */
+.g2-room-settings {
+  gap: 6px;
+}
+
+.g2-room-settings .g2-room-field {
+  display: flow-root;
+}
+
+.g2-room-settings .g2-room-field > .g2-legend {
+  float: left;
+  width: 7.2em;
+  margin: 0;
+  padding: 6px 8px 0 0;
+  box-sizing: border-box;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.g2-room-settings .g2-mode-pills {
+  display: flex;
+  width: fit-content;
+}
+
+.g2-room-settings .g2-room-hint {
+  clear: both;
+  padding-top: 2px;
+}
+
+.g2-room-field .g2-pill-label {
+  font-size: calc(var(--g2-size-button) - 3px);
+}
+
+.g2-room-world-list,
+.g2-room-toggle-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.g2-room-world,
+.g2-room-toggle-list .g2-toggle {
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+}
+
+.g2-room-settings-box .g2-toggle-name {
+  font-size: calc(var(--g2-size-button) - 3px);
+}
+
+.g2-room-hint {
+  font-size: var(--g2-size-small);
+}
+
+.g2-room-status {
+  min-height: 1.3em;
+  text-align: right;
+}
+
+/* Lobby layout (room agent): the lobby card with the shared rules panel (.g2-with-rules / .g2-rules) to its right,
+   stacked below it on narrow screens. The lobby card is wider than the other screens' cards. The top padding keeps
+   the language selector in the corner clear of the rules panel. The type pill a duel cannot take (more than two
+   players in the room) is dimmed. */
+.g2-room-lobby.g2-centered {
+  padding-top: 50px;
+}
+
+.g2-room-layout > .g2-room-card {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: 960px;
+}
+
+.g2-room-rules-type {
+  margin-left: 6px;
+  font-family: var(--g2-font-text);
+  font-size: var(--g2-size-small);
+  color: var(--g2-muted);
+}
+
+.g2-pill-disabled,
+.g2-pill-disabled:hover {
+  color: var(--g2-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1080px) {
+  .g2-room-layout > .g2-room-card,
+  .g2-room-layout > .g2-room-rules {
+    flex: none;
+    width: min(1000px, 100%);
+    max-width: none;
+  }
+}
+
+/* Short side-by-side screens (1280×720): the room rules are the longest list. The lobby's top padding already clears
+   the language selector, so the panel may take the card's height; the lines get a little tighter. */
+@media (min-width: 1081px) and (max-height: 820px) {
+  .g2-room-layout > .g2-room-rules {
+    max-height: calc(100% - 20px);
+    padding: 10px 14px 12px;
+  }
+
+  .g2-room-rules .g2-rules-list {
+    font-size: 14px;
+    line-height: 1.22;
+  }
+
+  .g2-room-rules .g2-rules-line + .g2-rules-line {
+    margin-top: 3px;
+  }
+}
+
+/* Round HUD extras: ticks, HP bars, banners (inside .g2-hud-slot, top left). */
+.g2-hud-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 230px;
+  max-width: 300px;
+}
+
+/* A banner (duel countdown, waiting) wraps inside the panels' width instead of widening them when it appears or
+   while its seconds tick. The ticks panel is always there, so the slot never collapses to the banner alone. */
+.g2-hud-slot > .g2-room-banner {
+  box-sizing: border-box;
+  width: 0;
+  min-width: 100%;
+}
+
+.g2-room-ticks {
+  padding: 2px 10px 6px;
+  font-size: var(--g2-size-small);
+}
+
+.g2-room-ticks-head {
+  font-family: var(--g2-font-display);
+  color: var(--g2-gold);
+}
+
+.g2-room-ticks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.g2-room-tick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--g2-muted);
+}
+
+.g2-room-tick-mark {
+  flex: none;
+  width: 14px;
+  text-align: center;
+  font-family: 'Segoe UI Symbol', 'Apple Symbols', 'DejaVu Sans', sans-serif;
+}
+
+.g2-room-tick-done {
+  color: var(--g2-text);
+}
+
+.g2-room-tick-done .g2-room-tick-mark {
+  color: #7fd35b;
+}
+
+.g2-room-tick-away {
+  opacity: 0.55;
+}
+
+.g2-room-banner {
+  padding: 4px 12px 6px;
+  font-size: var(--g2-size-small);
+  color: var(--g2-gold-bright);
+}
+
+.g2-room-banner-alert {
+  color: #f0b04a;
+  animation: g2-pulse 1.2s ease-in-out infinite;
+}
+
+/* Room buttons in the round HUD (End round for the party host, Leave room) and under the round table. */
+.g2-room-hud-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.g2-room-result-actions {
+  justify-content: flex-end;
+  align-items: center;
+  column-gap: 14px;
+}
+
+/* After this player's guess the round stays on screen but the map is done. */
+.g2-room-waiting .g2-map-widget {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Duel health: BAR_BACK frame, BAR_HEALTH fill. */
+.g2-hp-fill {
+  background: url('/ui/gothic/BAR_HEALTH.png') left center / auto 100% repeat-x;
+  transition: width 0.9s ease-out;
+}
+
+.g2-hp-low .g2-hp-fill {
+  animation: g2-pulse 1s ease-in-out infinite;
+}
+
+.g2-duel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 10px 8px;
+}
+
+.g2-overlay .g2-duel {
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  background: none;
+}
+
+.g2-duel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--g2-size-small);
+  color: var(--g2-muted);
+}
+
+.g2-duel-mult {
+  font-family: var(--g2-font-display);
+  font-size: var(--g2-size-button);
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-glow);
+}
+
+.g2-duel-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  position: relative;
+}
+
+.g2-duel-side-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--g2-size-small);
+}
+
+.g2-duel-me .g2-room-nick {
+  color: var(--g2-gold-bright);
+}
+
+.g2-duel-hp {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.g2-duel-damage {
+  color: var(--g2-danger);
+  font-size: var(--g2-size-small);
+  white-space: nowrap;
+}
+
+.g2-duel-compact .g2-hp-bar {
+  min-width: 200px;
+  height: 18px;
+  border-width: 5px 8px;
+  border-image-width: 5px 8px;
+}
+
+/* Result card in rooms: smaller map, the round table below it. */
+.g2-room-result-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.g2-result:has(.g2-room-result-extra) .g2-result-map {
+  height: min(36vh, 320px);
+}
+
+.g2-result:has(.g2-room-result-extra) {
+  width: min(860px, 100%);
+}
+
+.g2-room-table-wrap {
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.g2-room-table {
+  font-size: var(--g2-size-small);
+}
+
+.g2-room-table th {
+  font-size: 17px;
+}
+
+.g2-room-table td {
+  padding: 3px 8px;
+}
+
+.g2-room-table td.g2-table-world {
+  max-width: 220px;
+}
+
+.g2-room-winner td {
+  color: var(--g2-gold-bright);
+}
+
+.g2-room-next {
+  text-align: right;
+  font-size: var(--g2-size-small);
+}
+
+/* Final standings */
+.g2-duel-banner {
+  text-align: center;
+  padding: 6px 0;
+}
+
+.g2-duel-banner-title {
+  font-family: var(--g2-font-display);
+  font-size: calc(var(--g2-size-stat) + 6px);
+  color: var(--g2-gold-bright);
+  text-shadow: var(--g2-glow);
+}
+
+.g2-duel-banner-lose .g2-duel-banner-title {
+  color: var(--g2-danger);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-duel-banner-reason {
+  margin: 2px 0 0;
+  color: var(--g2-text);
+}
+
+.g2-room-over .g2-room-standings {
+  font-size: var(--g2-size-text);
+}
+
+/* Waiting screen (a round already guessed, after a reload). */
+.g2-room-wait-card {
+  width: min(460px, 100%);
+  align-items: stretch;
+  text-align: center;
+}
+
+.g2-room-wait-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.g2-room-wait-slot .g2-room-ticks-list {
+  max-height: none;
+}
+
+/* Connection lost banner (outside the screen so it survives screen changes). */
+.g2-room-conn {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 6px 16px;
+  font: var(--g2-size-small) / 1.3 var(--g2-font-text, serif);
+  color: #f0b04a;
+  background: rgba(10, 8, 5, 0.92);
+  border: 1px solid var(--g2-gold-line, rgba(201, 164, 76, 0.45));
+  box-shadow: var(--g2-shadow, 0 6px 20px #000);
+}
+
+@media (max-width: 720px) {
+  .g2-room-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 760px) {
+  .g2-room-code-value {
+    font-size: 28px;
+  }
+
+  .g2-room-card {
+    gap: 6px;
+  }
+}
+
+/* ---- UX review fixes (stage 3) --------------------------------------------------------- */
+
+/* Sticky action rows at the bottom of a scrolling card. Sticky offsets count from the card's padding edge, so
+   the row reaches into the card's bottom padding (bottom/margin/padding = that padding) and covers the content
+   scrolling under it there too; its fill matches the card interior (the MENU_INGAME texture over the page),
+   not the lighter page colour. --g2-sticky-pad follows the .g2-card bottom padding of each breakpoint. */
+.g2-start .g2-start-actions,
+.g2-summary .g2-actions-end,
+.g2-daily .g2-daily-actions,
+.g2-room-actions {
+  --g2-sticky-bg: rgb(6, 4, 2);
+  --g2-sticky-pad: 20px;
+  bottom: calc(-1 * var(--g2-sticky-pad));
+  margin-bottom: calc(-1 * var(--g2-sticky-pad));
+  padding-bottom: var(--g2-sticky-pad);
+}
+
+@media (max-height: 800px) {
+  .g2-start .g2-start-actions,
+  .g2-summary .g2-actions-end,
+  .g2-daily .g2-daily-actions,
+  .g2-room-actions {
+    --g2-sticky-pad: 12px;
+  }
+}
+
+/* Daily page: Main menu sticks to the bottom like the summary's row; settings in two pairs per line; the next-daily
+   countdown and the past-days picker on one line. */
+.g2-daily .g2-daily-actions {
+  position: sticky;
+  z-index: 1;
+  flex: none;
+  padding-top: 6px;
+  background-color: var(--g2-sticky-bg, var(--g2-bg));
+}
+
+.g2-daily .g2-settings {
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+}
+
+/* Two columns that never wrap: the countdown takes what the picker leaves; only its label may shrink (ellipsis).
+   The digits sit in fixed cells (src/pages/daily.ts countdownEl): the game font's digits are proportional and have
+   no tabular figures, so a ticking clock used to change the row's width and, near the limit, wrap the picker. */
+.g2-daily-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 24px;
+  font-size: var(--g2-size-small);
+}
+
+.g2-daily-foot > .g2-daily-next {
+  margin: 0;
+}
+
+.g2-daily-next {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3em;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.g2-daily-next-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.g2-daily-countdown,
+.g2-daily-next-after {
+  flex: none;
+}
+
+.g2-daily-countdown {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* "4", the widest digit of the game fonts, is about 1.4× their "0" (pl/ru atlases included). */
+.g2-digit {
+  display: inline-block;
+  width: 1.25ch;
+  text-align: center;
+}
+
+.g2-digit-sep {
+  display: inline-block;
+  width: 0.5ch;
+  text-align: center;
+}
+
+.g2-daily-foot > .g2-daily-picker {
+  flex-wrap: nowrap;
+  justify-self: end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.g2-daily-picker > .g2-join-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.g2-daily-picker > .g2-input,
+.g2-daily-picker > .g2-btn {
+  flex: none;
+}
+
+@media (max-width: 600px) {
+  .g2-daily-foot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .g2-daily-foot > .g2-daily-picker {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 600px) {
+  .g2-daily .g2-settings {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+}
+
+/* The top shadow of a sticky row only makes sense while content scrolls under it. A scroll-driven animation on the
+   card's scroll timeline adds it: an inactive timeline (the card does not scroll) leaves the base value (none), and
+   the last keyframe drops it at the end of the scroll, where nothing is under the row any more. Browsers without
+   scroll timelines run a 0 s animation that ends on that last keyframe: no shadow, no stray line. */
+@keyframes g2-sticky-shadow {
+  0%,
+  98% {
+    box-shadow: 0 -10px 12px -6px rgba(0, 0, 0, 0.9);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
+.g2-start .g2-start-actions,
+.g2-summary .g2-actions-end,
+.g2-daily .g2-daily-actions,
+.g2-room-actions {
+  box-shadow: none;
+  animation: g2-sticky-shadow linear both;
+  animation-timeline: scroll(nearest block);
+}
+
+@media (max-height: 760px) {
+  .g2-start .g2-start-actions {
+    --g2-sticky-pad: 8px;
+  }
+}
+
+/* The share text is four lines tall; its Copy button keeps a button's height instead of stretching to it. */
+.g2-copy-row:has(> .g2-share-text) {
+  align-items: center;
+}
+
+/* Table rows get an explicit line height: Alegreya's default one is about a third taller than the game
+   fonts', so a fallback glyph (a Cyrillic nickname in an en/de leaderboard) made its row taller than the
+   others. */
+.g2-table th,
+.g2-table td {
+  line-height: 1;
+}
+
+/* A nickname with letters outside Latin-1 (src/ui/dom.ts nicknameEl): the whole name in the fallback, in every
+   language, so a name never mixes two fonts. Alegreya defaults to old-style figures (a 0 reads as an o). */
+.g2-ext-script {
+  font-family: 'Alegreya', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-feature-settings: 'lnum' 1;
+}
+
+/* ---- 1280×720 fit: daily, challenge and summary pages without an inner scrollbar ------------------------------
+   Settings on one line, the player count on the leaderboard's heading line, the leaderboard cut to the rows that
+   fit (src/ui/leaderboard.ts autoFitLeaderboard, "Show all" for the rest), tighter tables on short screens. */
+.g2-settings-line {
+  margin: 0;
+}
+
+.g2-settings-item {
+  white-space: nowrap;
+}
+
+.g2-settings-sep {
+  color: var(--g2-muted);
+}
+
+.g2-lb-head,
+.g2-daily-status-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+}
+
+.g2-lb-head .g2-legend,
+.g2-daily-status-head .g2-legend {
+  margin: 0;
+}
+
+.g2-lb-more {
+  margin-left: auto;
+  align-self: center;
+}
+
+.g2-lb-table tr.g2-lb-hidden {
+  display: none;
+}
+
+@media (max-height: 800px) {
+  .g2-table th,
+  .g2-table td {
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+
+  .g2-table th {
+    font-size: 18px;
+  }
+
+  .g2-summary .g2-bar {
+    height: 20px;
+    border-width: 6px 12px;
+    border-image-width: 6px 12px;
+  }
+
+  .g2-total .g2-stat-value {
+    font-size: calc(var(--g2-size-stat) + 4px);
+  }
+
+  .g2-share-text {
+    line-height: 1.2;
+  }
+
+  .g2-lb-table tr.g2-lb-gap td {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* Share block: heading and the copy field side by side, the hint underneath. */
+  .g2-share {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 14px;
+  }
+
+  .g2-share > .g2-legend {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .g2-share > .g2-copy-row {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .g2-share > .g2-share-hint {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+
+  /* The daily share text is four lines: heading and Copy stacked on the left, the text on the right. */
+  .g2-share > .g2-copy-row:has(> .g2-share-text) {
+    display: contents;
+  }
+
+  .g2-share > .g2-copy-row > .g2-share-text {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+  }
+
+  .g2-share:has(.g2-share-text) > .g2-legend {
+    align-self: end;
+  }
+
+  .g2-share > .g2-copy-row > .g2-copy {
+    grid-row: 2;
+    grid-column: 1;
+    justify-self: start;
+    align-self: start;
+  }
+}
+
+/* ---- problem reports (src/ui/report.ts) ------------------------------------------------- */
+
+/* Corner link on every page; the round screen has its own flag button instead. */
+.g2-report-link {
+  position: fixed;
+  left: 12px;
+  bottom: 10px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  font: var(--g2-size-small) / 1.3 var(--g2-font-text);
+  color: var(--g2-muted);
+  background: none;
+  border: 0;
+  text-shadow: var(--g2-text-shadow);
+  cursor: pointer;
+  opacity: 0.75;
+  transition:
+    color 0.12s,
+    opacity 0.12s;
+}
+
+.g2-report-link:hover,
+.g2-report-link:focus-visible {
+  color: var(--g2-gold-bright);
+  opacity: 1;
+}
+
+.g2-report-link:focus-visible {
+  outline: 1px solid var(--g2-gold-bright);
+  outline-offset: 2px;
+}
+
+body:has(.g2-round) .g2-report-link,
+body:has(.g2-modal-backdrop) .g2-report-link {
+  display: none;
+}
+
+.g2-report-icon {
+  flex: none;
+  display: block;
+}
+
+/* HUD flag: a small square choice button next to "Return to start". */
+.g2-hud .g2-report-flag {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+  color: var(--g2-gold-dim);
+}
+
+.g2-hud .g2-report-flag:hover {
+  color: var(--g2-gold-bright);
+}
+
+.g2-report-flag .g2-report-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* The dialog: outside the screen root, above everything (rooms' connection banner included). */
+.g2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.g2-modal {
+  width: min(680px, 100%);
+  max-height: 100%;
+  background-color: var(--g2-panel-solid);
+}
+
+.g2-report {
+  gap: 10px;
+}
+
+.g2-report-title {
+  font-size: var(--g2-size-heading);
+}
+
+.g2-report-intro,
+.g2-report-note {
+  margin: 0;
+  color: var(--g2-muted);
+  line-height: 1.3;
+}
+
+.g2-report-note {
+  font-size: var(--g2-size-small);
+}
+
+.g2-report-types,
+.g2-report-where,
+.g2-report-cats {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.g2-report-type-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.g2-report-type {
+  align-items: flex-start;
+  gap: 10px;
+  padding: 5px 8px;
+}
+
+.g2-report-type .g2-toggle-box {
+  margin-top: 3px;
+  border-radius: 0;
+}
+
+.g2-report-type .g2-toggle-name {
+  font-size: 20px;
+}
+
+.g2-report-place {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.g2-report-place[hidden] {
+  display: none;
+}
+
+.g2-report-sublegend {
+  margin-bottom: 4px;
+  font-size: var(--g2-size-button);
+}
+
+.g2-report-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Chips: the native input is visually hidden; the label shows the state like a menu choice. */
+.g2-report-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  font-size: var(--g2-size-small);
+  color: var(--g2-text);
+  background: var(--g2-row);
+  border: 1px solid var(--g2-gold-faint);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
+}
+
+.g2-report-chip > input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.g2-report-chip:hover {
+  background-color: var(--g2-row-hover);
+}
+
+.g2-report-chip:has(> input:checked) {
+  color: var(--g2-gold-bright);
+  background: linear-gradient(90deg, var(--g2-row-on), transparent 120%), var(--g2-row);
+  border-color: var(--g2-gold);
+  text-shadow: var(--g2-text-shadow);
+}
+
+.g2-report-chip:has(> input:focus-visible) {
+  outline: 1px solid var(--g2-gold-bright);
+  outline-offset: 2px;
+}
+
+.g2-report-texthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: -6px;
+}
+
+.g2-report-texthead .g2-report-sublegend {
+  margin-bottom: 0;
+}
+
+.g2-report-counter {
+  font-size: var(--g2-size-small);
+  color: var(--g2-gold-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.g2-report-textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  line-height: 1.35;
+}
+
+.g2-report-textarea::placeholder {
+  color: var(--g2-gold-dim);
+}
+
+.g2-report-error {
+  margin: -4px 0 0;
+}
+
+.g2-report-error:empty {
+  display: none;
+}
+
+.g2-report-actions {
+  justify-content: flex-end;
+}
+
+.g2-report-actions > .g2-btn {
+  min-width: 140px;
+}
+
+@media (max-width: 560px) {
+  .g2-report-type-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- quick play rounds, rules panel, legal notice (src/pages/setup.ts, src/ui/rulespanel.ts, src/ui/legal.ts) -- */
+
+/* Time limit and rounds share one line on the setup card. */
+.g2-time-rounds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 24px;
+}
+
+.g2-time-rounds > .g2-time {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.g2-time-rounds > .g2-rounds {
+  flex: none;
+}
+
+/* The page's card with the rules panel to its right; below it when the window is narrow. The wrapper takes the
+   screen's height so the card keeps its own max-height (and inner scrolling, sticky action rows). */
+.g2-with-rules {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.g2-with-rules > .g2-card {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.g2-rules {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  /* 340 px: the German lines in the wide Gothic font still fit 1280×720 without scrolling. */
+  width: 340px;
+  /* Clear of the language selector (top right) and the footer links (bottom corners). */
+  max-height: calc(100% - 64px);
+  overflow-y: auto;
+  padding: 12px 16px 14px;
+  scrollbar-color: var(--g2-gold-dim) transparent;
+}
+
+.g2-rules-heading {
+  margin: 0 0 6px;
+  font-weight: 400;
+}
+
+.g2-rules-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  font-size: var(--g2-size-small);
+  line-height: 1.35;
+  color: var(--g2-text);
+}
+
+.g2-rules-line + .g2-rules-line {
+  margin-top: 4px;
+}
+
+.g2-rules-line::marker {
+  color: var(--g2-gold);
+}
+
+@media (max-width: 1080px) {
+  /* Stacked: the screen scrolls; auto margins centre the group while it fits and collapse (no clipping) when not. */
+  .g2-centered:has(> .g2-with-rules) {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .g2-with-rules {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    flex: none;
+    height: auto;
+    margin-top: auto;
+  }
+
+  .g2-with-rules > .g2-card {
+    max-height: none;
+  }
+
+  .g2-rules {
+    width: min(640px, 100%);
+    max-height: none;
+  }
+
+  .g2-start .g2-rules {
+    width: min(700px, 100%);
+  }
+
+  .g2-daily .g2-rules {
+    width: min(760px, 100%);
+  }
+}
+
+/* Legal: a quiet link in the bottom-right corner of the page, the notice in a game panel. */
+.g2-legal-foot {
+  position: absolute;
+  right: 14px;
+  bottom: 4px;
+  z-index: 2;
+  line-height: 1;
+}
+
+.g2-legal-link {
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  font-family: var(--g2-font-text);
+  font-size: 13px;
+  color: var(--g2-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--g2-gold-faint);
+  text-underline-offset: 3px;
+  text-shadow: var(--g2-text-shadow);
+  cursor: pointer;
+}
+
+.g2-legal-link:hover,
+.g2-legal-link:focus-visible {
+  color: var(--g2-gold-bright);
+  text-decoration-color: currentColor;
+}
+
+@media (max-width: 1080px) {
+  /* Stacked layouts scroll the screen: the link follows the content instead of floating over it. */
+  .g2-centered:has(> .g2-with-rules) > .g2-legal-foot {
+    position: static;
+    flex: none;
+    align-self: flex-end;
+    margin: 8px 0 auto;
+  }
+}
+
+.g2-legal {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(86vh, 720px);
+  padding: 14px 22px 16px;
+  background-color: rgba(10, 8, 5, 0.96);
+  color: var(--g2-text);
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.g2-legal[open] {
+  display: flex;
+}
+
+.g2-legal::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.g2-legal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.g2-legal-title {
+  font-size: var(--g2-size-legend);
+}
+
+.g2-legal-x {
+  min-width: 34px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* Long prose: the serif fallback reads better than the bitmap-derived game font (SPEC §9.6, readability first). */
+.g2-legal-body {
+  min-height: 0;
+  overflow-y: auto;
+  font-family: 'Alegreya', 'Palatino Linotype', Palatino, Georgia, serif;
+  font-feature-settings: 'lnum' 1;
+  padding-right: 6px;
+  scrollbar-color: var(--g2-gold-dim) transparent;
+}
+
+.g2-legal-body:focus-visible {
+  outline: 1px solid var(--g2-gold-line);
+  outline-offset: 2px;
+}
+
+.g2-legal-section + .g2-legal-section {
+  margin-top: 10px;
+}
+
+.g2-legal-heading {
+  margin: 0 0 4px;
+  font-weight: 400;
+}
+
+.g2-legal-text {
+  margin: 0 0 6px;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.g2-legal-links {
+  margin: 0 0 6px;
+  padding-left: 20px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.g2-legal-links li::marker {
+  color: var(--g2-gold);
+}
+
+.g2-legal-contact {
+  color: var(--g2-gold-bright);
+  overflow-wrap: anywhere;
+}
+
+.g2-legal-actions {
+  justify-content: flex-end;
+}
